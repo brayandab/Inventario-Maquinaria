@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Inventario - Maquinarias</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            background-color: #f1f3f5;
+        }
+        .card-custom {
+            background-color: #ffffff;
+            border: 3px solid #198754;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 40px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            text-align: center;
+            font-weight: bold;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #212529;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1rem;
+            color: #6c757d;
+            margin-bottom: 25px;
+        }
+        .btn-guardar {
+            background-color: #198754;
+            color: white;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+        .btn-guardar:hover {
+            background-color: #146c43;
+        }
+        .table thead {
+            background-color: #d1e7dd;
+        }
+        .table th,
+        .table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+        input[type="number"] {
+            width: 120px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Barra de navegación -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+    <div class="container">
+        <a class="navbar-brand" href="/">Maquinarias</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/farmaceutico/crear">Crear Usuario</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/farmaceutico/borrar-usuario">Eliminar Usuario</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/farmaceutico/pedidos">Pedidos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/farmaceutico/inventario">Inventario</a>
+                </li>
+            </ul>
+            <div class="d-flex">
+                <a href="/logout" class="btn btn-light">Cerrar sesión</a>
+            </div>
+        </div>
+    </div>
+</nav>
+<!-- Fin barra de navegación -->
+
+<div class="container">
+    <h1>Inventario</h1>
+    <p class="subtitle">Controla fácilmente el stock de tus maquinarias.</p>
+
+    <div class="card card-custom">
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th>Maquinaria</th>
+                <th>Stock</th>
+                <th>Actualizar Stock</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="producto : ${productos}"
+                th:attr="data-id=${producto.idMaquinaria}">
+                <td th:text="${producto.nombre}">Taladro Industrial</td>
+                <td>
+                    <input type="number" min="0" class="stock-input"
+                           th:value="${producto.stock}" />
+                </td>
+                <td>
+                    <button class="btn btn-guardar" onclick="guardarCambios(this)">Guardar</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <p th:if="${#lists.isEmpty(productos)}" class="text-muted text-center">No hay maquinarias en el inventario.</p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function guardarCambios(button) {
+        const fila = button.closest('tr');
+        const productoId = fila.getAttribute('data-id');
+        const stockInput = fila.querySelector('.stock-input');
+        const stock = parseInt(stockInput.value);
+
+        if (isNaN(stock) || stock < 0) {
+            alert('El stock debe ser un número entero mayor o igual a cero.');
+            return;
+        }
+
+        const data = { stock: stock };
+
+        fetch(`/api/productos/actualizar-stock-fecha/${productoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => { throw new Error(text); });
+            }
+            return response.json();
+        })
+        .then(productoActualizado => {
+            alert(`Stock de "${productoActualizado.nombre}" actualizado correctamente.`);
+        })
+        .catch(error => {
+            alert('Error al actualizar el stock: ' + error.message);
+        });
+    }
+</script>
+
+</body>
+</html>
