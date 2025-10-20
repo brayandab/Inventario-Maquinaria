@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Nuevo Producto - Maquinarias</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+          background-color: #f1f3f5;
+        }
+        .card-custom {
+          background-color: #ffffff;
+          border: 3px solid #198754;
+          border-radius: 15px;
+          padding: 25px;
+          margin-top: 40px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+          text-align: center;
+          font-weight: bold;
+          font-size: 2.5rem;
+          margin-bottom: 10px;
+          color: #212529;
+        }
+        .subtitle {
+          text-align: center;
+          font-size: 1rem;
+          color: #6c757d;
+          margin-bottom: 25px;
+        }
+        .btn-guardar {
+          background-color: #198754;
+          color: white;
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-weight: 500;
+        }
+        .btn-guardar:hover {
+          background-color: #146c43;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 🔹 Barra de navegación -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+    <div class="container">
+        <a class="navbar-brand" href="/">Maquinarias</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/farmaceutico/crear">Crear Usuario</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/farmaceutico/borrar-usuario">Eliminar Usuario</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/farmaceutico/pedidos">Pedidos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/farmaceutico/inventario">Inventario</a>
+                </li>
+            </ul>
+            <div class="d-flex">
+                <a href="/logout" class="btn btn-light">Cerrar sesión</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- 🔹 Formulario -->
+<div class="container">
+    <h1>Nuevo Producto</h1>
+    <p class="subtitle">Agrega una nueva maquinaria al inventario.</p>
+
+    <div class="card card-custom">
+        <form id="productoForm" enctype="multipart/form-data">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nombre:</label>
+                    <input type="text" class="form-control" id="nombre" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Proveedor:</label>
+                    <input type="text" class="form-control" id="proveedor" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descripción:</label>
+                <textarea class="form-control" id="descripcion" rows="2" required></textarea>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Lote:</label>
+                    <input type="text" class="form-control" id="lote" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Stock:</label>
+                    <input type="number" class="form-control" id="stock" min="0" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Precio Unitario:</label>
+                    <input type="number" class="form-control" id="precioUnitario" step="0.01" required>
+                </div>
+            </div>
+
+            <!-- 🔹 Imagen: URL o Archivo -->
+            <div class="mb-3">
+                <label class="form-label">Foto de la maquinaria:</label>
+                <input type="text" class="form-control mb-2" id="fotoUrl" placeholder="Pega la URL de la imagen (opcional)">
+                <div class="text-center">— o —</div>
+                <input type="file" class="form-control mt-2" id="fotoFile" accept="image/*">
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="/farmaceutico/inventario" class="btn btn-secondary">← Volver</a>
+                <button type="submit" class="btn btn-guardar">Guardar Producto</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const form = document.getElementById('productoForm');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fotoFile = document.getElementById('fotoFile').files[0];
+      const fotoUrlManual = document.getElementById('fotoUrl').value;
+      let fotoFinal = null;
+
+      try {
+        if (fotoFile) {
+          const formData = new FormData();
+          formData.append('file', fotoFile);
+
+          const uploadResponse = await fetch('/api/productos/subir-foto', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (uploadResponse.ok) {
+  const data = await uploadResponse.json();
+  fotoFinal = data.url; // obtenemos el campo "url" del JSON
+} else {
+  const errorText = await uploadResponse.text();
+  alert('❌ Error al subir la foto (verifica el tamaño o formato): ' + errorText);
+  return;
+}
+        } else if (fotoUrlManual.trim() !== '') {
+          fotoFinal = fotoUrlManual;
+        }
+
+        const producto = {
+          nombre: document.getElementById('nombre').value,
+          descripcion: document.getElementById('descripcion').value,
+          proveedor: document.getElementById('proveedor').value,
+          lote: document.getElementById('lote').value,
+          stock: parseInt(document.getElementById('stock').value),
+          precioUnitario: parseFloat(document.getElementById('precioUnitario').value),
+          foto: fotoFinal
+        };
+
+        const response = await fetch('/api/productos/crear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(producto)
+        });
+
+        if (response.ok) {
+          alert('✅ Producto registrado correctamente');
+          window.location.href = '/farmaceutico/inventario';
+        } else {
+          alert('❌ Error al registrar el producto');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error de conexión o carga');
+      }
+    });
+</script>
+
+</body>
+</html>

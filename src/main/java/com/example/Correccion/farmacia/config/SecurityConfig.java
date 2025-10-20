@@ -103,7 +103,11 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/", "/home", "/index/**", "/productos",
-                                "/api/**","/register","/api/pacientes/**").permitAll()
+                                "/api/**","/register","/api/pacientes/**","/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/webjars/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .userDetailsService(userDetailsService()) // 👈 REGISTRA TU SERVICIO AQUÍ

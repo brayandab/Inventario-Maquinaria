@@ -13,7 +13,7 @@
             border: 3px solid #198754;
             border-radius: 15px;
             padding: 25px;
-            margin-top: 40px;
+            margin-top: 20px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
         h1 {
@@ -38,6 +38,29 @@
         }
         .btn-guardar:hover {
             background-color: #146c43;
+        }
+        .btn-nuevo {
+            background-color: #198754;
+            color: white;
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 8px 16px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        .btn-nuevo:hover {
+            background-color: #146c43;
+            color: white;
+        }
+        .btn-eliminar {
+            background-color: #dc3545;
+            color: white;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+        .btn-eliminar:hover {
+            background-color: #bb2d3b;
         }
         .table thead {
             background-color: #d1e7dd;
@@ -67,21 +90,11 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link active" href="/">Inicio</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/farmaceutico/crear">Crear Usuario</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/farmaceutico/borrar-usuario">Eliminar Usuario</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/farmaceutico/pedidos">Pedidos</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/farmaceutico/inventario">Inventario</a>
-                </li>
+                <li class="nav-item"><a class="nav-link active" href="/">Inicio</a></li>
+                <li class="nav-item"><a class="nav-link" href="/farmaceutico/crear">Crear Usuario</a></li>
+                <li class="nav-item"><a class="nav-link" href="/farmaceutico/borrar-usuario">Eliminar Usuario</a></li>
+                <li class="nav-item"><a class="nav-link" href="/farmaceutico/pedidos">Pedidos</a></li>
+                <li class="nav-item"><a class="nav-link" href="/farmaceutico/inventario">Inventario</a></li>
             </ul>
             <div class="d-flex">
                 <a href="/logout" class="btn btn-light">Cerrar sesión</a>
@@ -95,6 +108,11 @@
     <h1>Inventario</h1>
     <p class="subtitle">Controla fácilmente el stock de tus maquinarias.</p>
 
+    <!-- Botón a la derecha -->
+    <div class="d-flex justify-content-end mb-3">
+        <a href="/farmaceutico/nuevo-producto" class="btn-nuevo"> Nuevo Producto</a>
+    </div>
+
     <div class="card card-custom">
         <table class="table table-bordered">
             <thead>
@@ -102,18 +120,20 @@
                 <th>Maquinaria</th>
                 <th>Stock</th>
                 <th>Actualizar Stock</th>
+                <th>Eliminar</th> <!-- 🔹 Nueva columna -->
             </tr>
             </thead>
             <tbody>
-            <tr th:each="producto : ${productos}"
-                th:attr="data-id=${producto.idMaquinaria}">
+            <tr th:each="producto : ${productos}" th:attr="data-id=${producto.idMaquinaria}">
                 <td th:text="${producto.nombre}">Taladro Industrial</td>
                 <td>
-                    <input type="number" min="0" class="stock-input"
-                           th:value="${producto.stock}" />
+                    <input type="number" min="0" class="stock-input" th:value="${producto.stock}" />
                 </td>
                 <td>
                     <button class="btn btn-guardar" onclick="guardarCambios(this)">Guardar</button>
+                </td>
+                <td>
+                    <button class="btn btn-eliminar" onclick="eliminarProducto(this)">Eliminar</button>
                 </td>
             </tr>
             </tbody>
@@ -154,6 +174,26 @@
         .catch(error => {
             alert('Error al actualizar el stock: ' + error.message);
         });
+    }
+
+    function eliminarProducto(button) {
+        const fila = button.closest('tr');
+        const productoId = fila.getAttribute('data-id');
+
+        if (confirm('¿Seguro que deseas eliminar este producto?')) {
+            fetch(`/api/productos/${productoId}`, { method: 'DELETE' })
+            .then(response => {
+                if (response.ok) {
+                    fila.remove();
+                    alert('✅ Producto eliminado correctamente.');
+                } else {
+                    alert('❌ Error al eliminar el producto.');
+                }
+            })
+            .catch(error => {
+                alert('⚠️ Error de conexión: ' + error.message);
+            });
+        }
     }
 </script>
 

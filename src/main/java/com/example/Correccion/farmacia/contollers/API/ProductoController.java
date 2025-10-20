@@ -1,24 +1,23 @@
 package com.example.Correccion.farmacia.contollers.API;
 
-
-
 import com.example.Correccion.farmacia.dto.ProductoCarritoDTO;
 import com.example.Correccion.farmacia.entities.Producto;
 import com.example.Correccion.farmacia.repository.ProductoRepository;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/productos")
-@Api(value = "Productos", description = "Operaciones relacionadas con los productos")
+@CrossOrigin(origins = "*")
 public class ProductoController {
 
     private final ProductoRepository repository;
@@ -27,35 +26,77 @@ public class ProductoController {
         this.repository = repository;
     }
 
-    @ApiOperation(value = "Obtener todos los productos")
-    //Trae todos los productos
+    // 🔹 Obtener todos los productos
     @GetMapping
     public List<Producto> obtenerTodos() {
         return repository.findAll();
     }
 
-    @ApiOperation(value = "Crear un nuevo producto")
-    //Crea nuevos productos
+    // 🔹 Crear un nuevo producto (por JSON)
     @PostMapping("/crear")
     public Producto guardar(@RequestBody Producto producto) {
         return repository.save(producto);
     }
 
-    //Busca el producto asociado
-    @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
-        return repository.findById(id).<ResponseEntity<?>>map(producto ->
-                ResponseEntity.ok(producto)
-        ).orElseGet(() ->
-                ResponseEntity.status(HttpStatus.NOT_FOUND).body("Producto no encontrado.")
-        );
+    // 🔹 Subir foto desde el explorador (archivo físico)
+    @PostMapping("/subir-foto")
+    public ResponseEntity<?> subirFoto(@RequestParam("file") MultipartFile file) {
+        try {
+            String uploadDir = "uploads";
+            Path uploadPath = Paths.get(System.getProperty("user.dir"), uploadDir);
+
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            Path filePath = uploadPath.resolve(fileName);
+            file.transferTo(filePath.toFile());
+
+            // 🔹 URL completa para que el navegador pueda mostrarla
+            String fileUrl = "http://localhost:8080/uploads/" + fileName;
+
+            return ResponseEntity.ok(Map.of("url", fileUrl));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al subir la foto: " + e.getMessage()));
+        }
     }
 
 
 
+    // 🔹 Subir o actualizar foto para un producto existente (Base64)
+    @PostMapping("/subir-foto/{id}")
+    public ResponseEntity<?> subirFotoExistente(@PathVariable Long id, @RequestParam("foto") MultipartFile archivo) {
+        Optional<Producto> optionalProducto = repository.findById(id);
+        if (optionalProducto.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Producto no encontrado.");
+        }
 
-    //Actualiza el producto por id
-    @ApiOperation(value = "Actualizar un producto existente")
+        try {
+            Producto producto = optionalProducto.get();
+            // Guardar como Base64 (si no se usa la carpeta)
+            String imagenBase64 = Base64.getEncoder().encodeToString(archivo.getBytes());
+            producto.setFoto(imagenBase64);
+            repository.save(producto);
+            return ResponseEntity.ok("Foto actualizada correctamente.");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar la imagen: " + e.getMessage());
+        }
+    }
+
+    // 🔹 Buscar producto por ID
+    @GetMapping("/{id}")
+    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
+        return repository.findById(id)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Producto no encontrado."));
+    }
+
+    // 🔹 Actualizar producto
     @PutMapping("/{id}")
     public Producto actualizar(@PathVariable Long id, @RequestBody Producto producto) {
         return repository.findById(id)
@@ -64,14 +105,15 @@ public class ProductoController {
                     existingProducto.setDescripcion(producto.getDescripcion());
                     existingProducto.setProveedor(producto.getProveedor());
                     existingProducto.setLote(producto.getLote());
-                    existingProducto.setFechaVencimiento(producto.getFechaVencimiento());
                     existingProducto.setStock(producto.getStock());
                     existingProducto.setPrecioUnitario(producto.getPrecioUnitario());
+                    existingProducto.setFoto(producto.getFoto());
                     return repository.save(existingProducto);
                 })
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
     }
 
+    // 🔹 Actualizar stock
     @PutMapping("/actualizar-stock-fecha/{id}")
     public ResponseEntity<?> actualizarStockYFecha(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         Optional<Producto> optionalProducto = repository.findById(id);
@@ -90,19 +132,14 @@ public class ProductoController {
                 producto.setStock(stock);
             }
 
-            if (updates.containsKey("fechaVencimiento")) {
-                String fechaStr = updates.get("fechaVencimiento").toString();
-                producto.setFechaVencimiento(LocalDate.parse(fechaStr));
-            }
-
             Producto actualizado = repository.save(producto);
             return ResponseEntity.ok(actualizado);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Datos inválidos: " + e.getMessage());
         }
     }
-    //Elimina el producto por id
-    @ApiOperation(value = "Eliminar un producto por su ID")
+
+    // 🔹 Eliminar producto
     @DeleteMapping("/{id}")
     public ResponseEntity<String> eliminar(@PathVariable Long id) {
         if (repository.existsById(id)) {
@@ -113,23 +150,25 @@ public class ProductoController {
         }
     }
 
+    // 🔹 Verificar stock
     @PostMapping("/verificar-stock")
     public ResponseEntity<?> verificarStock(@RequestBody List<ProductoCarritoDTO> productos) {
         for (ProductoCarritoDTO dto : productos) {
             Optional<Producto> productoOpt = repository.findById(dto.getId());
 
             if (productoOpt.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of("error", "Producto con ID " + dto.getId() + " no encontrado."));
+                return ResponseEntity.status(404)
+                        .body(Map.of("error", "Producto con ID " + dto.getId() + " no encontrado."));
             }
 
             Producto producto = productoOpt.get();
 
             if (producto.getStock() < dto.getCantidad()) {
-                return ResponseEntity.status(400).body(Map.of("error", "Stock insuficiente para el producto: " + producto.getNombre()));
+                return ResponseEntity.status(400)
+                        .body(Map.of("error", "Stock insuficiente para el producto: " + producto.getNombre()));
             }
         }
 
         return ResponseEntity.ok(Map.of("mensaje", "Todos los productos tienen stock suficiente."));
     }
-
 }

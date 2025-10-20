@@ -54,4 +54,10 @@ public class FarmaceuticoWebController {
         return "farmaceutico/inventario";
     }
 
+    @GetMapping("/nuevo-producto")
+    public String nuevoProducto() {
+        return "farmaceutico/nuevo-producto";
+    }
+
+
 }

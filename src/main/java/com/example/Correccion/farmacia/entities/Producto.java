@@ -25,8 +25,7 @@ public class Producto {
     @Column(name = "lote")
     private String lote;
 
-    @Column(name = "fecha_vencimiento")
-    private LocalDate fechaVencimiento;  // Eliminamos la anotación @DateTimeFormat
+    // Eliminamos la anotación @DateTimeFormat
 
     @Column(name = "stock")
     private int stock;
@@ -71,14 +70,6 @@ public class Producto {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
-    }
-
-    public LocalDate getFechaVencimiento() {
-        return fechaVencimiento;
-    }
-
-    public void setFechaVencimiento(LocalDate fechaVencimiento) {
-        this.fechaVencimiento = fechaVencimiento;
     }
 
     public String getLote() {
